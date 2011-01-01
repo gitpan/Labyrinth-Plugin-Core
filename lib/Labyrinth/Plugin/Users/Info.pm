@@ -3,7 +3,7 @@ package Labyrinth::Plugin::Users::Info;
 use warnings;
 use strict;
 
-my $VERSION = '5.00';
+my $VERSION = '5.01';
 
 =head1 NAME
 
@@ -87,8 +87,6 @@ sub Item {
 
 =item Delete
 
-=item GodCheck
-
 =item LoadInfo
 
 =back
@@ -97,7 +95,7 @@ sub Item {
 
 sub Edit {
     $cgiparams{userid} ||= $tvars{'loginid'};
-    return  unless GodCheck();
+    return  unless MasterCheck();
     return  unless AccessUser($LEVEL);
     return  unless AuthorCheck('GetUserInfoByID','userid',$LEVEL);
 
@@ -110,7 +108,7 @@ sub Edit {
 }
 
 sub Save {
-    return  unless GodCheck();
+    return  unless MasterCheck();
     return  unless AccessUser($LEVEL);
 
     my $newuser = $cgiparams{'userid'} ? 0 : 1;
@@ -142,12 +140,6 @@ sub Delete {
     return  unless $cgiparams{'userid'};
     return  if     $cgiparams{'userid'} == 1;   # cannot delete the master user
     $dbi->DoQuery('DeleteUserInfo',$cgiparams{'userid'});
-}
-
-sub GodCheck {
-    return 1    if(!$cgiparams{userid} || $cgiparams{userid} > 1 || $tvars{'loginid'} == 1);
-    $tvars{errcode} = 'BADACCESS';
-    return 0;
 }
 
 sub LoadInfo {
