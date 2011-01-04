@@ -1,18 +1,17 @@
-package Labyrinth::Plugin::Articles::Sections;
+package Labyrinth::Plugin::Articles::Site;
 
 use warnings;
 use strict;
 
-use vars qw($VERSION $ALLSQL $SECTIONID);
-$VERSION = '5.04';
+my $VERSION = '5.04';
 
 =head1 NAME
 
-Labyrinth::Plugin::Articles::Sections - Sections handler plugin for Labyrinth
+Labyrinth::Plugin::Articles::Site - Site Pages handler plugin for Labyrinth
 
 =head1 DESCRIPTION
 
-Contains all the section handling functionality
+Contains all the site pages handling functionality
 
 =cut
 
@@ -22,14 +21,19 @@ Contains all the section handling functionality
 use base qw(Labyrinth::Plugin::Articles);
 
 use Clone qw(clone);
+use Time::Local;
+use Data::Dumper;
 
 use Labyrinth::Audit;
 use Labyrinth::DBUtils;
 use Labyrinth::DTUtils;
+use Labyrinth::Globals;
 use Labyrinth::MLUtils;
 use Labyrinth::Session;
 use Labyrinth::Support;
 use Labyrinth::Variables;
+use Labyrinth::Writer;
+use Labyrinth::Metadata;
 
 # -------------------------------------
 # Variables
@@ -49,8 +53,7 @@ for(keys %fields) {
     push @allfields, $_;
 }
 
-$ALLSQL     = 'AllArticles';
-$SECTIONID  = 2;
+my $SECTIONID = 3;
 
 # -------------------------------------
 # The Subs
@@ -59,19 +62,64 @@ $SECTIONID  = 2;
 
 =over 4
 
-=item GetSection
+=item Archive
+
+=item List
+
+=item Meta
+
+=item Cloud
+
+=item Search
+
+=item Item
 
 =back
 
 =cut
 
-sub GetSection {
-    my $name = $cgiparams{name};
-    my $request = $cgiparams{act} || 'home-public';
-    ($cgiparams{name}) = split("-",$request);
+sub Archive {
+    $cgiparams{sectionid} = $SECTIONID;
+    $cgiparams{section} = 'site';
+
+    shift->SUPER::Archive();
+    $tvars{articles} = undef;
+}
+
+sub List {
+    $cgiparams{sectionid} = $SECTIONID;
+    $settings{limit} = 1;
+
+    shift->SUPER::List();
+}
+
+sub Meta {
+    return  unless($cgiparams{data});
+
+    $cgiparams{sectionid} = $SECTIONID;
+    $settings{limit} = 10;
+
+    shift->SUPER::Meta();
+}
+
+sub Cloud {
+    $cgiparams{sectionid} = $SECTIONID;
+    $cgiparams{actcode} = 'site-meta';
+    shift->SUPER::Cloud();
+}
+
+sub Search {
+    return  unless($cgiparams{data});
+
+    $cgiparams{sectionid} = $SECTIONID;
+    $settings{limit} = 10;
+
+    shift->SUPER::Search();
+}
+
+sub Item {
+    $cgiparams{sectionid} = $SECTIONID;
     shift->SUPER::Item();
-    $tvars{page}->{section} = $tvars{articles}->{$cgiparams{name}}  if($tvars{articles}->{$cgiparams{name}});
-    $cgiparams{name} = $name;   # revert back to what it should be!
 }
 
 =head1 ADMIN INTERFACE METHODS
@@ -107,18 +155,23 @@ sub Admin {
 sub Add {
     return  unless AccessUser(MASTER);
     $cgiparams{sectionid} = $SECTIONID;
-    shift->SUPER::Add();
+    my $self = shift;
+    $self->SUPER::Add();
+    $self->SUPER::Tags();
 }
 
 sub Edit {
     return  unless AccessUser(MASTER);
     $cgiparams{sectionid} = $SECTIONID;
-    shift->SUPER::Edit();
+    my $self = shift;
+    $self->SUPER::Edit();
+    $self->SUPER::Tags();
 }
 
 sub Save {
     return  unless AccessUser(MASTER);
     $cgiparams{sectionid} = $SECTIONID;
+    $cgiparams{quickname} ||= formatDate(0);
     shift->SUPER::Save();
 }
 
@@ -134,7 +187,7 @@ __END__
 
 =head1 SEE ALSO
 
-  Labyrinth
+L<Labyrinth>
 
 =head1 AUTHOR
 
