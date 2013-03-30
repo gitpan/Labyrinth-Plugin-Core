@@ -3,7 +3,7 @@ package Labyrinth::Plugin::Users;
 use warnings;
 use strict;
 
-my $VERSION = '5.10';
+my $VERSION = '5.11';
 
 =head1 NAME
 
@@ -464,8 +464,8 @@ sub AdminSave {
         )   if($cgiparams{image});
 
     # in case of a new user
-    $tvars{data}->{'accessid'} = $tvars{data}->{'accessid'} ? 1 : 0;
-    $tvars{data}->{'search'}   = $tvars{data}->{'search'}   ? 1 : 0;
+    $tvars{data}->{'accessid'} = $tvars{data}->{'accessid'} || 1;
+    $tvars{data}->{'search'}   = $tvars{data}->{'search'} ? 1 : 0;
     $tvars{data}->{'realm'}    = Authorised(ADMIN) && $tvars{data}->{'realmid'} ? RealmName($tvars{data}->{realmid}) : $realm;
 
     my @fields = (  $tvars{data}{'accessid'}, $tvars{data}{'search'},
@@ -629,7 +629,7 @@ Miss Barbell Productions, L<http://www.missbarbell.co.uk/>
 
 =head1 COPYRIGHT & LICENSE
 
-  Copyright (C) 2002-2012 Barbie for Miss Barbell Productions
+  Copyright (C) 2002-2013 Barbie for Miss Barbell Productions
   All Rights Reserved.
 
   This module is free software; you can redistribute it and/or

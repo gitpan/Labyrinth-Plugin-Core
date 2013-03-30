@@ -3,7 +3,7 @@ package Labyrinth::Plugin::Articles;
 use warnings;
 use strict;
 
-my $VERSION = '5.10';
+my $VERSION = '5.11';
 
 =head1 NAME
 
@@ -291,7 +291,7 @@ sub Search {
 
 sub Item {
     my $name = $cgiparams{'name'}    || undef;
-    my $naid = $cgiparams{articleid} || undef;
+    my $naid = $cgiparams{articleid} || $cgiparams{id} || undef;
 
     my $maximagewidth  = $settings{maximagewidth}  || MaxArticleWidth;
     my $maximageheight = $settings{maximageheight} || MaxArticleHeight;
@@ -561,11 +561,13 @@ sub AddLink {
 }
 
 sub DeleteItem {
+    return  unless AccessUser($LEVEL2);
     return  unless $cgiparams{'recordid'};
     $dbi->DoQuery('DeleteContent',$cgiparams{'recordid'});
 }
 
 sub Relocate {
+    return  unless AccessUser($LEVEL);
     return  unless $cgiparams{'recordid'};
     my $move = shift;
 
@@ -887,7 +889,7 @@ sub Save {
 }
 
 sub Promote {
-    return  unless AccessUser(ADMIN);
+    return  unless AccessUser(PUBLISHER);
     my @ids = CGIArray('LISTED');
     return  unless @ids;
     for my $id (@ids) {
@@ -925,6 +927,7 @@ sub Copy {
 }
 
 sub Delete {
+    return  unless AccessUser($LEVEL2);
 #   return  unless AuthorCheck('GetArticleByID','articleid',$LEVEL);
 
     my @delete = CGIArray('LISTED');
@@ -955,7 +958,7 @@ Miss Barbell Productions, L<http://www.missbarbell.co.uk/>
 
 =head1 COPYRIGHT & LICENSE
 
-  Copyright (C) 2002-2012 Barbie for Miss Barbell Productions
+  Copyright (C) 2002-2013 Barbie for Miss Barbell Productions
   All Rights Reserved.
 
   This module is free software; you can redistribute it and/or
