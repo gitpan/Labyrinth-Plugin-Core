@@ -10,7 +10,7 @@ WriteMakefile(
     AUTHOR              => 'Barbie <barbie@cpan.org>',
     NAME                => 'Labyrinth::Plugin::Core',
     VERSION_FROM        => 'lib/Labyrinth/Plugin/Core.pm',
-    ABSTRACT            => 'Core Labyrinth codebase - Core Plugins',
+    ABSTRACT            => 'Labyrinth Website Management Framework Core Plugins',
     NO_META             => 1,
     PREREQ_PM           => {
 
@@ -21,7 +21,7 @@ WriteMakefile(
         'File::Copy'            => '0',
         'File::Basename'        => '0',
         'Image::Size'           => '0',
-        'Labyrinth'             => '5.12',
+        'Labyrinth'             => '5.18',
         'Time::Local'           => '0',
         'URI::Escape'           => '0',
 

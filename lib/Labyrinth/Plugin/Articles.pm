@@ -3,7 +3,7 @@ package Labyrinth::Plugin::Articles;
 use warnings;
 use strict;
 
-my $VERSION = '5.11';
+my $VERSION = '5.12';
 
 =head1 NAME
 
@@ -620,7 +620,7 @@ sub LoadContent {
             $body[$block]->{imagelink}  = $cgiparams{"IMAGELINK$block"};
             $body[$block]->{href}       = $cgiparams{"IMAGEHREF$block"};
             $body[$block]->{align}      = $cgiparams{"ALIGN$block"};
-            my $tag    = $cgiparams{"IMAGETAG$block"};
+            my $tag    = CleanTags($cgiparams{"IMAGETAG$block"});
             my $width  = $cgiparams{"width$block"}  || $maximagewidth;
             my $height = $cgiparams{"height$block"} || $maximageheight;
 
