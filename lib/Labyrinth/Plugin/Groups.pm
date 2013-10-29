@@ -3,7 +3,7 @@ package Labyrinth::Plugin::Groups;
 use warnings;
 use strict;
 
-my $VERSION = '5.12';
+my $VERSION = '5.13';
 
 =head1 NAME
 
@@ -99,6 +99,8 @@ sub UserGroups {
 }
 
 =head1 ADMIN INTERFACE METHODS
+
+All action methods are only accessible by users with admin permission.
 
 =over 4
 

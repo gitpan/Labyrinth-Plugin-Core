@@ -3,7 +3,7 @@ package Labyrinth::Plugin::Articles;
 use warnings;
 use strict;
 
-my $VERSION = '5.12';
+my $VERSION = '5.13';
 
 =head1 NAME
 
@@ -22,6 +22,7 @@ framework.
 use base qw(Labyrinth::Plugin::Base);
 
 use Clone qw(clone);
+use Data::Pageset;
 
 use Labyrinth::Audit;
 use Labyrinth::DBUtils;
@@ -57,17 +58,18 @@ use constant    LIMIT_LATEST    => 20;
 
 my %fields = (
     articleid   => { type => 0, html => 0 },
-    postdate    => { type => 0, html => 0 },
+    postdate    => { type => 0, html => 1 },
     quickname   => { type => 1, html => 1 },
     title       => { type => 1, html => 1 },
-    publish     => { type => 1, html => 0 },
+    publish     => { type => 1, html => 1 },
     folderid    => { type => 0, html => 0 },
     userid      => { type => 0, html => 0 },
     snippet     => { type => 0, html => 2 },
-    front       => { type => 0, html => 0 },
+    front       => { type => 0, html => 1 },
+    latest      => { type => 0, html => 1 },
     sectionid   => { type => 0, html => 0 },
-    width       => { type => 0, html => 0 },
-    height      => { type => 0, html => 0 },
+    width       => { type => 0, html => 1 },
+    height      => { type => 0, html => 1 },
     body        => { type => 0, html => 2 },
     metadata    => { type => 0, html => 1 },
 );
@@ -86,7 +88,7 @@ our $GETSQL     = 'GetArticleByID';
 our $DELETESQL  = 'DeleteRecords';
 our $PROMOTESQL = 'PromoteArticle';
 our $LEVEL      = EDITOR;
-my $LEVEL2      = ADMIN;
+our $LEVEL2     = PUBLISHER;
 
 # sectionid is used to reference different types of articles,
 # however, the default is also a standard article.
@@ -136,7 +138,8 @@ Key variables available are:
   our $GETSQL     = 'GetArticleByID';
   our $DELETESQL  = 'DeleteRecords';
   our $PROMOTESQL = 'PromoteArticle';
-  our $LEVEL      = EDITOR;
+  our $LEVEL      = EDITOR;             # for normal admin actions
+  our $LEVEL2     = PUBLISHER;          # for delete actions
 
 =cut
 
@@ -155,9 +158,13 @@ Retrieves a list of the latest article titles
 
 Retrieves a list of the volumes available.
 
+=item Page
+
+Retrieves an set of articles, for a given page. Default to first page.
+
 =item List
 
-Retrieves a list of articles.
+Retrieves an initial list of articles. Primarily used to prepare a front page.
 
 =item Meta
 
@@ -201,6 +208,42 @@ sub Archive {
 
     my @rows = $dbi->GetQuery('hash','GetVolumes',$cgiparams{sectionid});
     $tvars{archive}{$cgiparams{section}} = \@rows   if(@rows);
+}
+
+sub Page {
+    my @mainarts;
+    $cgiparams{name} = undef;
+    my $page = $cgiparams{page} || 1;
+    
+    my $limit = $settings{data}{article_pageset} || MAINPAGE;
+    my $sectionid = $cgiparams{sectionid} || $SECTIONID;
+    my @where = ("sectionid=$sectionid","publish=3");
+    my $where = 'WHERE ' . join(' AND ',@where);
+    my $order = 'ORDER BY ' . ($settings{data}{order} || 'createdate DESC');
+    my @rows = $dbi->GetQuery('hash',$ALLSQL,{where=>$where,order=>$order});
+
+    my $page_info = Data::Pageset->new({
+        'total_entries'       => scalar(@rows), 
+        'entries_per_page'    => $limit, 
+        # Optional, will use defaults otherwise.
+        'current_page'        => $page,
+        #'pages_per_set'       => $pages_per_set,
+        #'mode'                => 'fixed', # default, or 'slide'
+    });
+
+    $tvars{pages}{first}    = $page_info->first_page;
+    $tvars{pages}{last}     = $page_info->last_page;
+    $tvars{pages}{next}     = $page_info->next_page;
+    $tvars{pages}{previous} = $page_info->previous_page;
+
+    my @arts = splice(@rows, ($page - 1) * $limit, $limit);
+    for my $row (@arts) {
+        $cgiparams{articleid} = $row->{articleid};
+        Item();
+        push @mainarts, $tvars{articles}->{$tvars{primary}};
+    }
+    $tvars{mainarts} = \@mainarts   if(@mainarts);
+    $cgiparams{sectionid} = undef;
 }
 
 sub List {
@@ -389,15 +432,27 @@ Relocate an article in a list, where an order is in use.
 
 =item LoadContent
 
+Load complete article from form fields, save all image and media files.
+
 =item EditAmendments
+
+Additional drop downs and fields prepared for edit form.
 
 =item Save
 
+Save an article within the current section.
+
 =item Promote
+
+Promote the given article within the current section.
 
 =item Copy
 
+Copy an article, to create a new article, within the current section.
+
 =item Delete
+
+Delete a given article within the current section.
 
 =back
 
@@ -467,10 +522,10 @@ sub Add {
     my @fields = (  $data{folderid},
                     'DRAFT',
                     $data{userid},
-                    formatDate(0),
                     $data{sectionid},
                     $tvars{primary},
-                    1);
+                    1,
+                    formatDate(0));
     $data{articleid} = $dbi->IDQuery('AddArticle',@fields);
     $data{quickname} = 'ID'.$data{articleid};
 
@@ -707,8 +762,9 @@ sub LoadContent {
     $cgiparams{quickname} = lc $cgiparams{quickname};
 
     my %data = map {$_ => ($cgiparams{$_} || $tvars{data}->{$_})}
-                    qw(articleid createdate folderid userid title quickname publish snippet front sectionid);
+                    qw(articleid createdate folderid userid title quickname publish snippet front latest sectionid);
     $data{front}    = ($data{'front'} ? 1 : 0);
+    $data{latest}   = ($data{'latest'} ? 1 : 0);
     $data{imageid}  = $cgiparams{'display0'};
     $data{postdate} = formatDate(6,$data{createdate});
 
@@ -805,11 +861,12 @@ sub Save {
 
     return  if($tvars{errcode});
 
-    $data->{front} = $data->{front} ? 1 : 0;
+    $data->{front}       = $data->{front}  ? 1 : 0;
+    $data->{latest}      = $data->{latest} ? 1 : 0;
+    $data->{createdate}  =   formatDate(0)                      if($data->{publish} == 3 && $publish < 3);
+    $data->{createdate}  = unformatDate(3,$cgiparams{postdate}) if($cgiparams{postdate});
+    $data->{userid}    ||= $tvars{loginid};
     $data->{sectionid} ||= 1;           # default 1 = article
-    $data->{createdate} =   formatDate(0)                      if($data->{publish} == 3 && $publish < 3);
-    $data->{createdate} = unformatDate(3,$cgiparams{postdate}) if($cgiparams{postdate});
-    $data->{userid} ||= $tvars{loginid};
 
     if($sectionid == 6) {
         if($data->{publish} == 3 && $publish < 3) {
@@ -848,6 +905,7 @@ sub Save {
                     $data->{snippet},
                     $data->{imageid},
                     $data->{front},
+                    $data->{latest},
                     $data->{publish},
                     $data->{createdate},
                     $data->{articleid}

@@ -3,7 +3,7 @@ package Labyrinth::Plugin::Folders;
 use warnings;
 use strict;
 
-my $VERSION = '5.12';
+my $VERSION = '5.13';
 
 =head1 NAME
 
@@ -45,28 +45,42 @@ for(keys %fields) {
     push @allfields, $_;
 }
 
-my $LEVEL       = ADMIN;
-
 # -------------------------------------
 # The Subs
 
 =head1 ADMIN INTERFACE METHODS
 
+All action methods are only accessible by users with admin permission.
+
 =over 4
 
 =item Admin
 
+Lists the current set of folders.
+
 =item Add
+
+Add a new folder.
 
 =item AddLinkRealm
 
+Add a link between the specified folder and realm.
+
 =item Edit
+
+Edit specified folder.
 
 =item Save
 
+Save specified folder.
+
 =item Delete
 
+Delete specified folder.
+
 =item DeleteLinkRealm
+
+Delete a link between the specified folder and realm.
 
 =back
 
@@ -105,7 +119,7 @@ sub AddLinkRealm {
 }
 
 sub Edit {
-    return  unless AccessUser($LEVEL);
+    return  unless AccessUser(ADMIN);
     return  unless $cgiparams{'folderid'};
 
     my @rows = $dbi->GetQuery('hash','GetFolder',$cgiparams{'folderid'});
@@ -122,7 +136,7 @@ sub Edit {
 }
 
 sub Save {
-    return  unless AccessUser($LEVEL);
+    return  unless AccessUser(ADMIN);
     return  unless AuthorCheck('GetFolder','folderid');
     for(keys %fields) {
            if($fields{$_}->{html} == 1) { $cgiparams{$_} = CleanHTML($cgiparams{$_}) }
@@ -139,7 +153,7 @@ sub Save {
 }
 
 sub Delete {
-    return  unless AccessUser($LEVEL);
+    return  unless AccessUser(ADMIN);
     return  unless $cgiparams{'folderid'};
 
     $dbi->DoQuery('DeleteFolderIndex',$cgiparams{'folderid'});
@@ -147,7 +161,7 @@ sub Delete {
 }
 
 sub DeleteLinkRealm {
-    return  unless AccessUser($LEVEL);
+    return  unless AccessUser(ADMIN);
     my @rows = $dbi->GetQuery('hash','GetFolder',$cgiparams{'folderid'});
     @rows = $dbi->GetQuery('hash','GetFoldersByRefs',{xref => $rows[0]->{'ref'}});
     my $ids = join(",",map {$_->{folderid}} @rows);

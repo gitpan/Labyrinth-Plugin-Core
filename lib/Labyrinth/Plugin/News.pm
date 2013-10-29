@@ -3,7 +3,7 @@ package Labyrinth::Plugin::News;
 use warnings;
 use strict;
 
-my $VERSION = '5.12';
+my $VERSION = '5.13';
 
 =head1 NAME
 
@@ -77,6 +77,7 @@ my $GETSQL      = 'GetNewsByID';
 my $DELETESQL   = 'DeleteNews';
 my $PROMOTESQL  = 'PromoteNews';
 my $LEVEL       = EDITOR;
+my $LEVEL2      = ADMIN;
 my $NEXTCOMMAND = 'news-edit';
 
 # -------------------------------------
@@ -174,23 +175,44 @@ sub Item {
 
 =item Access
 
+Check whether user has access to admin functions. Must be Editor or greater.
+
 =item ImageCheck
+
+Checks whether images are being referenced in a news item. Used to allow the 
+images plugin to delete unused images.
 
 =item Admin
 
+List new items.
+
 =item Add
+
+Create a template variable hash to create a news item.
 
 =item Edit
 
+Edit the given news item.
+
 =item Copy
+
+Copy a specified news item to create a new one. Called via Admin().
 
 =item EditAmendments
 
+Provide additional drop downs and fields for editing.
+
 =item Promote
+
+Promote the given news item.
 
 =item Save
 
+Save the given news item.
+
 =item Delete
+
+Delete the listed news items. Called via Admin().
 
 =back
 
@@ -246,7 +268,7 @@ sub Admin {
 sub Add {
     return  unless AccessUser($LEVEL);
     my $ddpublish;
-    if(Authorised(ADMIN)) {
+    if(Authorised($LEVEL2)) {
         $ddpublish = PublishSelect($tvars{data}->{publish});
     } else {
         $ddpublish = PublishAction(1,1);
@@ -305,7 +327,7 @@ sub EditAmendments {
     $tvars{data}->{postdate}    = formatDate(3,$tvars{data}->{createdate});
     $tvars{data}->{body}        =~ s/^\s+//;
 
-    if(Authorised(ADMIN)) {
+    if(Authorised($LEVEL2)) {
         $tvars{data}->{ddpublish} = PublishSelect($tvars{data}->{publish});
     } else {
         my $promote = 0;
@@ -386,7 +408,7 @@ sub Save {
 }
 
 sub Delete {
-    return  unless AccessUser(ADMIN);
+    return  unless AccessUser($LEVEL2);
     my @ids = CGIArray('LISTED');
     return  unless @ids;
     for my $id (@ids) {
