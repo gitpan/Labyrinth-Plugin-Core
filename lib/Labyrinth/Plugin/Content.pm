@@ -3,7 +3,7 @@ package Labyrinth::Plugin::Content;
 use strict;
 use warnings;
 
-my $VERSION = '5.13';
+my $VERSION = '5.14';
 
 =head1 NAME
 
@@ -78,25 +78,50 @@ All the following reset the current realm.
 
 =over
 
-=item RealmPopup
+=item RealmAJAX
 
-Use when the popup layout template is required.
+Use when the AJAX layout template is required.
 
 =item RealmICal
 
 Use when the ICal layout template is required.
 
+=item RealmJS
+
+Use when the JavaScript layout template is required.
+
+=item RealmJSON
+
+Use when the JSON layout template is required.
+
 =item RealmPlain
 
 Use when the plain text layout template is required.
+
+=item RealmPopup
+
+Use when the popup layout template is required.
+
+=item RealmXML
+
+Use when the XML layout template is required.
+
+=item RealmYAML
+
+Use when the YAML layout template is required.
 
 =back
 
 =cut
 
-sub RealmPopup  { $tvars{realm} = 'popup'; }
+sub RealmAJAX   { $tvars{realm} = 'ajax';  }
 sub RealmICal   { $tvars{realm} = 'ical';  }
+sub RealmJS     { $tvars{realm} = 'js';    }
+sub RealmJSON   { $tvars{realm} = 'json';  }
 sub RealmPlain  { $tvars{realm} = 'plain'; }
+sub RealmPopup  { $tvars{realm} = 'popup'; }
+sub RealmXML    { $tvars{realm} = 'xml';   }
+sub RealmYAML   { $tvars{realm} = 'yaml';  }
 
 1;
 
@@ -113,7 +138,7 @@ Miss Barbell Productions, L<http://www.missbarbell.co.uk/>
 
 =head1 COPYRIGHT & LICENSE
 
-  Copyright (C) 2002-2013 Barbie for Miss Barbell Productions
+  Copyright (C) 2002-2014 Barbie for Miss Barbell Productions
   All Rights Reserved.
 
   This module is free software; you can redistribute it and/or

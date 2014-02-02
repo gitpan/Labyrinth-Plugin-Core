@@ -3,7 +3,7 @@ package Labyrinth::Plugin::Menus;
 use warnings;
 use strict;
 
-my $VERSION = '5.13';
+my $VERSION = '5.14';
 
 =head1 NAME
 
@@ -15,6 +15,15 @@ Contains all the menu handling functionality for the Labyrinth
 framework.
 
 =cut
+
+# menu array
+# 0 = ?
+# 1 = selected=1, unselected=0
+# 2 = title
+# 3 = href
+# 4 = access
+# 5 = text
+# 6.. = images
 
 # -------------------------------------
 # Library Modules
@@ -513,7 +522,7 @@ Miss Barbell Productions, L<http://www.missbarbell.co.uk/>
 
 =head1 COPYRIGHT & LICENSE
 
-  Copyright (C) 2002-2013 Barbie for Miss Barbell Productions
+  Copyright (C) 2002-2014 Barbie for Miss Barbell Productions
   All Rights Reserved.
 
   This module is free software; you can redistribute it and/or
