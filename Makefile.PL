@@ -8,7 +8,7 @@ use ExtUtils::MakeMaker;
 
 WriteMakefile(
     AUTHOR              => 'Barbie <barbie@cpan.org>',
-    NAME                => 'Labyrinth::Plugin::Core',
+    NAME                => 'Labyrinth-Plugin-Core',
     VERSION_FROM        => 'lib/Labyrinth/Plugin/Core.pm',
     ABSTRACT            => 'Labyrinth Website Management Framework Core Plugins',
     NO_META             => 1,
@@ -22,7 +22,7 @@ WriteMakefile(
         'File::Copy'            => '0',
         'File::Basename'        => '0',
         'Image::Size'           => '0',
-        'Labyrinth'             => '5.18',
+        'Labyrinth'             => '5.21',
         'Time::Local'           => '0',
         'URI::Escape'           => '0',
 

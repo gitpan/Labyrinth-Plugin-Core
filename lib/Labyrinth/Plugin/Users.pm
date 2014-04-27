@@ -3,7 +3,7 @@ package Labyrinth::Plugin::Users;
 use warnings;
 use strict;
 
-my $VERSION = '5.14';
+my $VERSION = '5.15';
 
 =head1 NAME
 
@@ -216,10 +216,10 @@ sub Password {
     $cgiparams{'userid'} = $tvars{'loginid'}    unless(Authorised(ADMIN) && $cgiparams{'userid'});
     $tvars{data}->{name} = UserName($cgiparams{userid});
 
-    my @mandatory = qw(userid effect2 effect3);
-    push @mandatory, 'effect1'  if($cgiparams{'userid'} == $tvars{'loginid'} || $tvars{user}{access} < ADMIN);
+    my @manfields = qw(userid effect2 effect3);
+    push @manfields, 'effect1'  if($cgiparams{'userid'} == $tvars{'loginid'} || $tvars{user}{access} < ADMIN);
 
-    if(FieldCheck(\@mandatory,\@mandatory)) {
+    if(FieldCheck(\@manfields,\@manfields)) {
         $tvars{errmess} = 'All fields must be complete, please try again.';
         $tvars{errcode} = 'ERROR';
         return;
@@ -263,10 +263,10 @@ sub Password {
 
     if($cgiparams{mailuser}) {
         my @rows = $dbi->GetQuery('hash','GetUserByID',$cgiparams{'userid'});
-        MailSend(   template    => 'mailer/reset.eml',
-                    name        => $rows[0]->{realname},
-                    password    => $cgiparams{effect2},
-                    email       => $rows[0]->{email}
+        MailSend(   template        => 'mailer/reset.eml',
+                    name            => $rows[0]->{realname},
+                    password        => $cgiparams{effect2},
+                    recipient_email => $rows[0]->{email}
         );
     }
 
@@ -337,11 +337,20 @@ Save the given user. For use by admin user to update any non-system user.
 
 =item Delete
 
-Delete the specified user.
+Delete the specified user account
 
 =item Ban
 
-Ban the specified user.
+Ban the specified user account. Account can be reactivated or deleted. 
+
+Banned users should receive a message at login, explain who they need to 
+contact to be reinstated.
+
+=item Disable
+
+Disable the specified user account. This different from a banned user, in that
+disabled accounts cannot be reactivated or deleted. This is to prevent reuse of
+an old account.
 
 =item AdminPass
 
@@ -377,6 +386,7 @@ sub Admin {
         $dbi->DoQuery('SetUserSearch',{ids=>$ids},1)    if($cgiparams{doaction} eq 'Show');
         $dbi->DoQuery('SetUserSearch',{ids=>$ids},0)    if($cgiparams{doaction} eq 'Hide');
         Ban($ids)                                       if($cgiparams{doaction} eq 'Ban');
+        Disable($ids)                                   if($cgiparams{doaction} eq 'Disable');
         Delete($ids)                                    if($cgiparams{doaction} eq 'Delete');
     }
 
@@ -454,7 +464,10 @@ sub Save {
         elsif($fields{$_}->{html} == 3) { $cgiparams{$_} = CleanLink($cgiparams{$_}) }
     }
 
-    return  if FieldCheck(\@allfields,\@mandatory);
+    my @manfields = @mandatory;
+    push @manfields, 'effect'   if($tvars{command} eq 'regsave');
+
+    return  if FieldCheck(\@allfields,\@manfields);
 
     ## before continuing we should ensure the IP address has not
     ## submitted repeated registrations. Though we should be aware
@@ -470,7 +483,7 @@ sub Save {
     );
 
     if($newuser) {
-        $tvars{data}{'accessid'} = $tvars{data}{'accessid'} ? 1 : 0;
+        $tvars{data}{'accessid'} = $tvars{data}{'accessid'} || 1;
         $tvars{data}{'search'}   = $tvars{data}{'search'}   ? 1 : 0;
         $tvars{data}{'realm'}    = 'public';
         $cgiparams{'userid'} = $dbi->IDQuery('NewUser', $tvars{data}{'effect'},
@@ -515,7 +528,7 @@ sub AdminSave {
         )   if($cgiparams{image});
 
     # in case of a new user
-    $tvars{data}->{'accessid'} = $tvars{data}->{'accessid'} ? 1 : 0;
+    $tvars{data}->{'accessid'} = $tvars{data}->{'accessid'} || 1;
     $tvars{data}->{'search'}   = $tvars{data}->{'search'}   ? 1 : 0;
     $tvars{data}->{'realm'}    = Authorised(ADMIN) && $tvars{data}->{'realmid'} ? RealmName($tvars{data}->{realmid}) : $realm;
 
@@ -541,6 +554,13 @@ sub Delete {
     return  unless AccessUser($LEVEL);
     $dbi->DoQuery('DeleteUsers',{ids => $ids});
     $tvars{thanks} = 'Users Deleted.';
+}
+
+sub Disable {
+    my $ids = shift;
+    return  unless AccessUser($LEVEL);
+    $dbi->DoQuery('BanUsers',{ids => $ids},'-deleted-');
+    $tvars{thanks} = 'Users Disabled.';
 }
 
 sub Ban {
@@ -598,10 +618,10 @@ sub AdminChng {
 
     if($cgiparams{mailuser}) {
         my @rows = $dbi->GetQuery('hash','GetUserByID',$cgiparams{'userid'});
-        MailSend(   template    => 'mailer/reset.eml',
-                    name        => $rows[0]->{realname},
-                    password    => $cgiparams{effect2},
-                    email       => $rows[0]->{email}
+        MailSend(   template        => 'mailer/reset.eml',
+                    name            => $rows[0]->{realname},
+                    password        => $cgiparams{effect2},
+                    recipient_email => $rows[0]->{email}
         );
     }
 }
@@ -633,9 +653,9 @@ sub ACL {
     return  unless $cgiparams{'userid'};
 
     my @rows = $dbi->GetQuery('hash','GetUserByID',$cgiparams{'userid'});
-    $tvars{data}->{$_} = $rows[0]->{$_}  for(qw(userid realname accessname));
+    $tvars{data}->{$_} = $rows[0]->{$_}  for(qw(userid realname accessname accessid));
 
-    push @{$tvars{data}->{access}}, { folderid => 0, foldername => 'default', accessname => $tvars{data}->{accessname} };
+    push @{$tvars{data}->{access}}, { folderid => 0, path => 'DEFAULT', accessname => $tvars{data}->{accessname}, ddaccess => AccessSelect($tvars{data}->{accessid},'ACCESS0') };
 
     @rows = $dbi->GetQuery('hash','UserACLs',$cgiparams{'userid'});
     for my $row (@rows) {
@@ -655,9 +675,9 @@ sub ACLAdd1 {
             my $folderid = FolderID($_);
             my $accessid = AccessID($settings{profiles}{profiles}{$cgiparams{profile}}{$_});
 
-            my @rows = $dbi->GetQuery('hash','UserACLCheck', $cgiparams{'userid'}, $folderid);
+            my @rows = $dbi->GetQuery('hash','UserACLCheck1', $cgiparams{'userid'}, $folderid);
             if(@rows) {
-                $dbi->DoQuery('UserACLUpdate',$accessid,$cgiparams{'userid'},$folderid)
+                $dbi->DoQuery('UserACLUpdate1',$accessid,$cgiparams{'userid'},$folderid)
                     if($rows[0]->{accessid} < $accessid);
             } else {
                 $dbi->DoQuery('UserACLInsert',$accessid,$cgiparams{'userid'},$folderid);
@@ -667,13 +687,17 @@ sub ACLAdd1 {
 }
 
 sub ACLAdd2 {
-    my ($userid,$folderid,$accessid) = @_;
-    my @rows = $dbi->GetQuery('hash','UserACLCheck', $userid, $folderid);
-    if(@rows) {
-        $dbi->DoQuery('UserACLUpdate',$accessid,$userid,$folderid)
-            if($rows[0]->{accessid} < $accessid);
+    my ($userid,$aclid,$accessid,$folderid) = @_;
+    if($aclid) {
+        my @rows = $dbi->GetQuery('hash','UserACLCheck2', $userid, $aclid);
+        if(@rows) {
+            $dbi->DoQuery('UserACLUpdate2',$accessid,$userid,$aclid)
+                if($rows[0]->{accessid} < $accessid);
+        } else {
+            $dbi->DoQuery('UserACLInsert',$accessid,$userid,$folderid);
+        }
     } else {
-        $dbi->DoQuery('UserACLInsert',$accessid,$userid,$folderid);
+        $dbi->DoQuery('UserACLDefault',$accessid,$userid);
     }
 }
 
@@ -683,10 +707,12 @@ sub ACLSave {
     if($cgiparams{submit} eq 'Apply') {
         ACLAdd1();
     } elsif($cgiparams{submit} eq 'Add') {
-        ACLAdd2($cgiparams{userid},$cgiparams{folderid},$cgiparams{accessid});
+        ACLAdd2($cgiparams{userid},0,$cgiparams{accessid},$cgiparams{folderid});
     } else {
-        for my $folderid ( map { s/ACCESS// } grep {/ACCESS/} keys %cgiparams) {
-            ACLAdd2($cgiparams{userid},$folderid,$cgiparams{'ACCESS'.$folderid});
+        my @acls = grep {/ACCESS/} keys %cgiparams;
+        for my $acl ( @acls ) {
+            my ($aclid) = $acl =~ /ACCESS(\d+)/;
+            ACLAdd2($cgiparams{userid},$aclid,$cgiparams{'ACCESS'.$aclid});
         }
     }
 
