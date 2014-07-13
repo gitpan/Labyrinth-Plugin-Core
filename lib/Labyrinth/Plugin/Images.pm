@@ -3,7 +3,7 @@ package Labyrinth::Plugin::Images;
 use warnings;
 use strict;
 
-my $VERSION = '5.15';
+my $VERSION = '5.16';
 
 =head1 NAME
 
@@ -26,7 +26,7 @@ use File::Copy;
 use File::Basename;
 
 use Labyrinth::Audit;
-use Labyrinth::Globals  qw(:default);
+use Labyrinth::Globals;
 use Labyrinth::DBUtils;
 use Labyrinth::DIUtils;
 use Labyrinth::Media;

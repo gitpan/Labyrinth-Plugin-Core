@@ -3,7 +3,7 @@ package Labyrinth::Plugin::Menus;
 use warnings;
 use strict;
 
-my $VERSION = '5.15';
+my $VERSION = '5.16';
 
 =head1 NAME
 
@@ -31,7 +31,7 @@ framework.
 use base qw(Labyrinth::Plugin::Base);
 
 use Labyrinth::Audit;
-use Labyrinth::Globals  qw(:default);
+use Labyrinth::Globals;
 use Labyrinth::DBUtils;
 use Labyrinth::Media;
 use Labyrinth::MLUtils;
@@ -80,6 +80,7 @@ my %adddata = (
     realmid     => 0,
     type        => 0,
     title       => '',
+    name        => '',
 );
 
 
@@ -113,6 +114,7 @@ sub LoadMenus {
 
     # for each menu get option list
     for my $row (@rows) {
+        $tvars{menus}->{$row->{menuid}}->{name}     = $row->{name};
         $tvars{menus}->{$row->{menuid}}->{title}    = $row->{title};
         $tvars{menus}->{$row->{menuid}}->{typeid}   = $row->{typeid};
         $tvars{menus}->{$row->{menuid}}->{parentid} = $row->{parentid};
@@ -211,6 +213,7 @@ sub _LoadMenus {
 
     # for each menu get option list
     for my $row (@rows) {
+        $tvars{menus}->{$row->{menuid}}->{name}     = $row->{name};
         $tvars{menus}->{$row->{menuid}}->{title}    = $row->{title};
         $tvars{menus}->{$row->{menuid}}->{typeid}   = $row->{typeid};
         $tvars{menus}->{$row->{menuid}}->{parentid} = $row->{parentid};

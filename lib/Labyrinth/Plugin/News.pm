@@ -3,7 +3,7 @@ package Labyrinth::Plugin::News;
 use warnings;
 use strict;
 
-my $VERSION = '5.15';
+my $VERSION = '5.16';
 
 =head1 NAME
 
@@ -23,7 +23,7 @@ use base qw(Labyrinth::Plugin::Base);
 
 use Clone qw(clone);
 
-use Labyrinth::Globals  qw(:default);
+use Labyrinth::Globals;
 use Labyrinth::DBUtils;
 use Labyrinth::DTUtils;
 use Labyrinth::Media;
