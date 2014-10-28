@@ -1,6 +1,10 @@
 Changes for the Labyrinth Core Plugins
 ======================================
 
+5.17    2014-10-28
+        - moved UserGroups from Plugin::Groups to Core (Groups).
+	- default to an id of 0, if articleid not set. (Articles).
+
 5.16    2014-07-13
         - reinstate name field for each menu.
         - Exporter tag ':default' in Labyrinth::Globals no longer used.
